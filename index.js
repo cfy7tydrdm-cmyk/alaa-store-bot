@@ -89,12 +89,18 @@ async function getAIReply(userText){
 
 async function sendMessage(senderId, text){
   try{
-    await axios.post(`https://graph.facebook.com/v20.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,{
-      recipient:{id:senderId},
-      message:{text}
-    });
+    await axios.post(
+      `https://graph.instagram.com/v26.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+      {
+        recipient:{id:senderId},
+        message:{text}
+      }
+    );
+
     console.log('Reply SENT');
-  } catch(e){ console.error('Send error', e.response?.data || e.message); }
+  } catch(e){
+    console.error('Send error', e.response?.data || e.message);
+  }
 }
 
 const PORT = process.env.PORT || 10000;
