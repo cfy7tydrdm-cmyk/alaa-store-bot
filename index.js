@@ -78,15 +78,15 @@ if(body.object === 'page'){
 }
 async function handleMessage(senderId, text){
   console.log(`Message from ${senderId}: ${text}`);
+
   try{
     const aiReply = await getAIReply(text);
     console.log(`AI Reply: ${aiReply}`);
     await sendMessage(senderId, aiReply);
   } catch(e){
-  console.error('GROQ ERROR:', e.response?.data || e.message);
-  return "Ahlan bik! Famech mochkel technique, jareb ba3ed chwaya.";
+    console.error('Handle error:', e.response?.data || e.message);
+  }
 }
-
 async function getAIReply(userText){
   if(!GROQ_API_KEY) return "Ahlan bik fi ALAA STORE! Chnowa t7eb? 😊";
   try{
