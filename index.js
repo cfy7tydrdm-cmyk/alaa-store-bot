@@ -34,50 +34,54 @@ app.get('/webhook', (req,res)=>{
 // RECEIVE MESSAGES
 app.post('/webhook', async (req,res)=>{
   console.log('--- NEW WEBHOOK ---', JSON.stringify(req.body).slice(0,500));
+
   try{
     const body = req.body;
+
     if(body.object === 'page' || body.object === 'instagram'){
+
       for(const entry of body.entry){
-        const messaging = entry.messaging || entry.changes || [];
 
-// Instagram format
-if(body.object === 'instagram' && entry.messaging){
-  for(const event of entry.messaging){
+        // Instagram messages
+        if(body.object === 'instagram' && entry.messaging){
 
-    if(event.message?.is_echo) continue;
-
-    const senderId = event.sender.id;
-    const text = event.message?.text;
-
-    if(text) await handleMessage(senderId, text);
-  }
-}
-// Page format
-if(body.object === 'page'){
-  for(const event of entry.messaging){
-    const senderId = event.sender.id;
-    const text = event.message?.text;
-
-    if(text) await handleMessage(senderId, text);
-  }
-}
-        // Page format
-        if(body.object === 'page'){
           for(const event of entry.messaging){
-            const senderId = event.sender.id;
+
+            // Ignore messages sent by the bot itself
+            if(event.message?.is_echo) continue;
+
+            const senderId = event.sender?.id;
             const text = event.message?.text;
-            if(text) await handleMessage(senderId, text);
+
+            if(senderId && text){
+              await handleMessage(senderId, text);
+            }
+          }
+        }
+
+        // Page messages
+        if(body.object === 'page' && entry.messaging){
+
+          for(const event of entry.messaging){
+
+            const senderId = event.sender?.id;
+            const text = event.message?.text;
+
+            if(senderId && text){
+              await handleMessage(senderId, text);
+            }
           }
         }
       }
     }
+
     res.status(200).send('EVENT_RECEIVED');
+
   } catch(e){
-    console.error('Handle error:', e.response?.data || e.message);
+    console.error('Webhook error:', e.response?.data || e.message);
+    res.sendStatus(500);
   }
-}
-async function handleMessage(senderId, text){
-  console.log(`Message from ${senderId}: ${text}`);
+});
 
   try{
     const aiReply = await getAIReply(text);
