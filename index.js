@@ -78,7 +78,6 @@ app.post('/webhook', async (req, res) => {
 
     const body = req.body;
 
-    // Make sure this is a Meta event
     if (
       body.object !== 'instagram' &&
       body.object !== 'page'
@@ -87,13 +86,11 @@ app.post('/webhook', async (req, res) => {
     }
 
 
-    // Loop through webhook entries
+    // =================================
+    // INSTAGRAM
+    // =================================
+
     for (const entry of body.entry || []) {
-
-
-      // =================================
-      // INSTAGRAM
-      // =================================
 
       if (
         body.object === 'instagram' &&
@@ -101,7 +98,6 @@ app.post('/webhook', async (req, res) => {
       ) {
 
         for (const event of entry.messaging) {
-
 
           // Ignore messages sent by our own bot
           if (event.message?.is_echo) {
@@ -111,15 +107,12 @@ app.post('/webhook', async (req, res) => {
             continue;
           }
 
-
           const senderId =
             event.sender?.id;
 
           const text =
             event.message?.text;
 
-
-          // Only process real text messages
           if (senderId && text) {
 
             await handleMessage(
@@ -148,7 +141,6 @@ app.post('/webhook', async (req, res) => {
           const text =
             event.message?.text;
 
-
           if (senderId && text) {
 
             await handleMessage(
@@ -161,7 +153,6 @@ app.post('/webhook', async (req, res) => {
     }
 
 
-    // Always tell Meta we received event
     res
       .status(200)
       .send('EVENT_RECEIVED');
@@ -190,25 +181,19 @@ async function handleMessage(senderId, text) {
     `📩 Message from ${senderId}: ${text}`
   );
 
-
   try {
 
-    // Ask AI for reply
     const aiReply =
       await getAIReply(text);
-
 
     console.log(
       `🤖 AI Reply: ${aiReply}`
     );
 
-
-    // Send reply to Instagram
     await sendMessage(
       senderId,
       aiReply
     );
-
 
   } catch (error) {
 
@@ -227,8 +212,6 @@ async function handleMessage(senderId, text) {
 
 async function getAIReply(userText) {
 
-
-  // Check API key
   if (!GROQ_API_KEY) {
 
     console.error(
@@ -247,7 +230,7 @@ async function getAIReply(userText) {
 
       {
 
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
 
         messages: [
 
@@ -259,7 +242,9 @@ async function getAIReply(userText) {
               'marque streetwear fi Tunisia. ' +
               'Jaweb b tounsi, 9sir, friendly ' +
               'w naturel. ' +
-              'A3ti réponses simples w utiles.'
+              'A3ti réponses simples w utiles. ' +
+              'Ma تستعملش كلام رسمي برشا. ' +
+              'جاوب كيف vendeur تونسي يحكي مع client fi Instagram.'
           },
 
           {
@@ -310,7 +295,6 @@ async function getAIReply(userText) {
       error.message
     );
 
-
     return 'Ahlan bik! Famech mochkel technique, jareb ba3ed chwaya.';
   }
 }
@@ -321,7 +305,6 @@ async function getAIReply(userText) {
 // ===============================
 
 async function sendMessage(senderId, text) {
-
 
   if (!PAGE_ACCESS_TOKEN) {
 
