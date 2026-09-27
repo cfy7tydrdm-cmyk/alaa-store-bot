@@ -40,12 +40,14 @@ app.post('/webhook', async (req,res)=>{
       for(const entry of body.entry){
         const messaging = entry.messaging || entry.changes || [];
 
-if(body.object === 'instagram' && entry.changes){
-  for(const change of entry.changes){
+if(body.object === 'instagram' && entry.messaging){
+  for(const event of entry.messaging){
+
     if(event.message?.is_echo) continue;
-      const event = change.value;
-      const senderId = event.sender?.id;
-      const text = event.message?.text;
+
+    const senderId = event.sender.id;
+    const text = event.message?.text;
+    if(text) await handleMessage(senderId, text);
 
       if(senderId && text){
         await handleMessage(senderId, text);
