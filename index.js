@@ -84,7 +84,9 @@ async function handleMessage(senderId, text){
     const aiReply = await getAIReply(text);
     console.log(`AI Reply: ${aiReply}`);
     await sendMessage(senderId, aiReply);
-  } catch(e){ console.error('Handle error', e); }
+  } catch(e){
+  console.error('GROQ ERROR:', e.response?.data || e.message);
+  return "Ahlan bik! Famech mochkel technique, jareb ba3ed chwaya.";
 }
 
 async function getAIReply(userText){
