@@ -349,5 +349,39 @@ async function sendMessage(senderId, text) {
         recipient: {
           id: senderId
         },
+                message: {
+          text: text
+        }
+      }
+    );
+
+    console.log(
+      '✅ Reply SENT'
+    );
+
+  } catch (error) {
+
+    console.error(
+      '❌ SEND ERROR:',
+      error.response?.data ||
+      error.message
+    );
+  }
+}
+
+
+// ===============================
+// START SERVER
+// ===============================
+
+const PORT =
+  process.env.PORT || 10000;
+
+app.listen(PORT, () => {
+
+  console.log(
+    `🚀 ALAA STORE Bot running on port ${PORT}`
+  );
+});
 
        
