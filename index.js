@@ -39,6 +39,20 @@ app.post('/webhook', async (req,res)=>{
     if(body.object === 'page' || body.object === 'instagram'){
       for(const entry of body.entry){
         const messaging = entry.messaging || entry.changes || [];
+
+if(body.object === 'instagram' && entry.changes){
+  for(const change of entry.changes){
+    if(change.field === 'messages'){
+      const event = change.value;
+      const senderId = event.sender?.id;
+      const text = event.message?.text;
+
+      if(senderId && text){
+        await handleMessage(senderId, text);
+      }
+    }
+  }
+}
         // Instagram format
         if(body.object === 'instagram' && entry.messaging){
           for(const event of entry.messaging){
