@@ -104,7 +104,7 @@ async function getAIReply(userText){
 async function sendMessage(senderId, text){
   try{
     await axios.post(
-      `https://graph.instagram.com/v26.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+      `https://graph.instagram.com/v26.0/17841448590483479/messages?access_token=${PAGE_ACCESS_TOKEN}`,
       {
         recipient:{id:senderId},
         message:{text}
