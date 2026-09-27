@@ -42,7 +42,7 @@ app.post('/webhook', async (req,res)=>{
 
 if(body.object === 'instagram' && entry.changes){
   for(const change of entry.changes){
-    if(change.field === 'messages'){
+    if(event.message?.is_echo) continue;
       const event = change.value;
       const senderId = event.sender?.id;
       const text = event.message?.text;
