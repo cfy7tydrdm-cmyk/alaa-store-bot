@@ -73,11 +73,9 @@ if(body.object === 'page'){
     }
     res.status(200).send('EVENT_RECEIVED');
   } catch(e){
-    console.error(e);
-    res.sendStatus(500);
+    console.error('Handle error:', e.response?.data || e.message);
   }
-});
-
+}
 async function handleMessage(senderId, text){
   console.log(`Message from ${senderId}: ${text}`);
   try{
