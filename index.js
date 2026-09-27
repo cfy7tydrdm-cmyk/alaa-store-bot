@@ -26,6 +26,18 @@ const INSTAGRAM_ACCOUNT_ID =
 
 
 // ===============================
+// CONVERSATION MEMORY
+// ===============================
+
+// Memory لكل client
+// كل client عندو conversation وحدها
+
+const conversations = {};
+
+const MAX_MESSAGES = 12;
+
+
+// ===============================
 // HOME
 // ===============================
 
@@ -40,21 +52,37 @@ app.get('/', (req, res) => {
 
 app.get('/webhook', (req, res) => {
 
-  console.log('🔍 Verification attempt:', req.query);
+  console.log(
+    'Verification attempt:',
+    req.query
+  );
 
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
+  const mode =
+    req.query['hub.mode'];
 
-  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+  const token =
+    req.query['hub.verify_token'];
 
-    console.log('✅ VERIFIED!');
+  const challenge =
+    req.query['hub.challenge'];
 
-    res.status(200).send(challenge);
+  if (
+    mode === 'subscribe' &&
+    token === VERIFY_TOKEN
+  ) {
+
+    console.log('VERIFIED!');
+
+    res
+      .status(200)
+      .send(challenge);
 
   } else {
 
-    console.log('❌ Token mismatch:', token);
+    console.log(
+      'Token mismatch:',
+      token
+    );
 
     res.sendStatus(403);
   }
@@ -80,10 +108,17 @@ app.post('/webhook', async (req, res) => {
       body.object !== 'instagram' &&
       body.object !== 'page'
     ) {
-      return res.status(200).send('EVENT_RECEIVED');
+
+      return res
+        .status(200)
+        .send('EVENT_RECEIVED');
     }
 
-    for (const entry of body.entry || []) {
+
+    for (
+      const entry of body.entry || []
+    ) {
+
 
       // ===============================
       // INSTAGRAM
@@ -94,14 +129,22 @@ app.post('/webhook', async (req, res) => {
         entry.messaging
       ) {
 
-        for (const event of entry.messaging) {
+        for (
+          const event of entry.messaging
+        ) {
 
-          if (event.message?.is_echo) {
+          // Ignore our own messages
+          if (
+            event.message?.is_echo
+          ) {
 
-            console.log('⏭️ Ignoring bot echo');
+            console.log(
+              'Ignoring bot echo'
+            );
 
             continue;
           }
+
 
           const senderId =
             event.sender?.id;
@@ -109,7 +152,11 @@ app.post('/webhook', async (req, res) => {
           const text =
             event.message?.text;
 
-          if (senderId && text) {
+
+          if (
+            senderId &&
+            text
+          ) {
 
             await handleMessage(
               senderId,
@@ -129,7 +176,9 @@ app.post('/webhook', async (req, res) => {
         entry.messaging
       ) {
 
-        for (const event of entry.messaging) {
+        for (
+          const event of entry.messaging
+        ) {
 
           const senderId =
             event.sender?.id;
@@ -137,7 +186,11 @@ app.post('/webhook', async (req, res) => {
           const text =
             event.message?.text;
 
-          if (senderId && text) {
+
+          if (
+            senderId &&
+            text
+          ) {
 
             await handleMessage(
               senderId,
@@ -148,6 +201,7 @@ app.post('/webhook', async (req, res) => {
       }
     }
 
+
     res
       .status(200)
       .send('EVENT_RECEIVED');
@@ -155,7 +209,7 @@ app.post('/webhook', async (req, res) => {
   } catch (error) {
 
     console.error(
-      '❌ WEBHOOK ERROR:',
+      'WEBHOOK ERROR:',
       error.response?.data ||
       error.message
     );
@@ -169,30 +223,93 @@ app.post('/webhook', async (req, res) => {
 // HANDLE CUSTOMER MESSAGE
 // ===============================
 
-async function handleMessage(senderId, text) {
+async function handleMessage(
+  senderId,
+  text
+) {
 
   console.log(
-    `📩 Message from ${senderId}: ${text}`
+    `Message from ${senderId}: ${text}`
   );
+
 
   try {
 
+    // Create memory for new client
+    if (
+      !conversations[senderId]
+    ) {
+
+      conversations[senderId] = [];
+    }
+
+
+    // Add customer message
+    conversations[senderId].push({
+
+      role: 'user',
+
+      content: text
+    });
+
+
+    // Keep only last messages
+    if (
+      conversations[senderId].length >
+      MAX_MESSAGES
+    ) {
+
+      conversations[senderId] =
+        conversations[senderId].slice(
+          -MAX_MESSAGES
+        );
+    }
+
+
     const aiReply =
-      await getAIReply(text);
+      await getAIReply(
+        senderId,
+        text
+      );
+
 
     console.log(
-      `🤖 AI Reply: ${aiReply}`
+      `AI Reply: ${aiReply}`
     );
+
+
+    // Save bot reply in memory
+    conversations[senderId].push({
+
+      role: 'assistant',
+
+      content: aiReply
+    });
+
+
+    // Keep memory limited
+    if (
+      conversations[senderId].length >
+      MAX_MESSAGES
+    ) {
+
+      conversations[senderId] =
+        conversations[senderId].slice(
+          -MAX_MESSAGES
+        );
+    }
+
 
     await sendMessage(
       senderId,
       aiReply
     );
 
+
   } catch (error) {
 
     console.error(
-      '❌ HANDLE MESSAGE ERROR:',
+      'HANDLE MESSAGE ERROR:',
       error.response?.data ||
       error.message
     );
@@ -204,128 +321,267 @@ async function handleMessage(senderId, text) {
 // GROQ AI
 // ===============================
 
-async function getAIReply(userText) {
+async function getAIReply(
+  senderId,
+  userText
+) {
 
   if (!GROQ_API_KEY) {
 
     console.error(
-      '❌ GROQ_API_KEY is missing'
+      'GROQ_API_KEY is missing'
     );
 
-    return 'Ahlan bik fi ALAA STORE! Chnowa t7eb? 😊';
+    return 'Chnowa t7eb ta3ref?';
   }
+
 
   try {
 
-    const response = await axios.post(
+    const conversation =
+      conversations[senderId] || [];
 
-      'https://api.groq.com/openai/v1/chat/completions',
 
-      {
+    const response =
+      await axios.post(
 
-        model: 'openai/gpt-oss-20b',
+        'https://api.groq.com/openai/v1/chat/completions',
 
-        messages: [
+        {
 
-          {
-            role: 'system',
+          model:
+            'openai/gpt-oss-20b',
 
-            content: `
-Enti vendeur virtuel mta3 ALAA STORE fi Tunisia.
 
-ALAA STORE ta3mel streetwear w vêtements homme.
+          messages: [
 
-IMPORTANT:
-- Jaweb TOUJOURS bel Tounsi écrit en Arabizi / Franco-Tunisien.
-- Ma تستعملش الحروف العربية نهائيا.
-- Ma تستعملش Arabic script نهائيا.
-- Ekteb kif client tunisien yekteb fi Instagram DM.
-- Exemple: "Ahla bik! Chnowa t7eb?", "3andna noir w gris", "9olli taille mte3ek".
-- Ma tktebch: "عسلامة", "شنوة", "تحب", "عندنا".
-- Ekteb: "Ahla", "Chnowa", "T7eb", "3andna".
+            {
 
-Tkalem m3a clients b style naturel, friendly, 9sir w commercial.
+              role: 'system',
 
-Ma ta3tich information 3al produit ken ma 3andekch information s7i7a 3lih.
+              content: `
 
-Ma تختلقش prix.
-Ma تختلقش stock.
-Ma تختلقش tailles.
-Ma تختلقش couleurs.
-Ma تختلقش discounts.
-Ma تختلقش produits.
-Ma تختلقش livraison gratuite.
-Ma تختلقش ay offre.
+You are the virtual salesperson of ALAA STORE in Tunisia.
 
-Ken client يسأل على produit w ma 3andekch information 3lih، ma ta3tihch réponse men mokhek.
-9ollou elli bech tetthabet mel information.
+ALAA STORE sells men's streetwear and clothing.
 
-Ken client يسأل سؤال عام وما يحتاجش معلومات stock/prix، جاوبو عادي.
+LANGUAGE:
 
-Ken client y9oul "Chnowa fama?" wala "Chneya 3andkom?", 9ollou elli 3andna streetwear homme w es2lou chnowa y7eb بالضبط.
+Always reply in Tunisian Arabic written only with Latin letters and numbers.
 
-Ma t9oulch elli enti AI wala robot ken client ma yes2elch.
+Never use Arabic alphabet.
 
-Ma تستعملش العربية الفصحى.
-Ma تستعملش الحروف العربية.
+Never use Arabic script.
 
-Instagram DM = réponse قصيرة، طبيعية، مباشرة.
+Use natural Tunisian Instagram DM style.
 
-Exemples:
-"Ahla bik 👋 Chnowa t7eb?"
-"3andna baggy jeans. 9olli taille w couleur."
-"Ey bien sûr, 9olli chnowa t7eb بالضبط."
+Examples:
 
-El hadaf mte3ek: تفهم chnowa y7eb el client w t3awnou.
+Ahla bik! Chnowa t7eb?
+
+Ey 3andna.
+
+9olli taille mte3ek.
+
+Chnowa el couleur elli t7ebha?
+
+B9adech?
+
+Ey fama.
+
+STYLE:
+
+Be friendly.
+
+Be natural.
+
+Be short.
+
+Be direct.
+
+Do not repeat the same greeting in every message.
+
+IMPORTANT CONVERSATION RULE:
+
+You are talking with the same customer throughout the conversation.
+
+Use the previous messages to understand what the customer is talking about.
+
+If the customer says something short like:
+
+33
+
+XL
+
+Noir
+
+Gris
+
+Ey
+
+Le
+
+Oui
+
+Oui noir
+
+B9adech
+
+Then understand it using the previous conversation.
+
+Do not ask the customer to repeat information that was already provided.
+
+Example:
+
+Customer:
+Nheb baggy jean bleu.
+
+You:
+9olli taille mte3ek?
+
+Customer:
+33
+
+Correct reply:
+Ey, taille 33. T7ebha bleu kif ma 9olt?
+
+Wrong reply:
+Ahla! 33 chnowa t7eb?
+
+Another example:
+
+Customer:
+Nheb pull noir.
+
+You:
+9olli taille mte3ek?
+
+Customer:
+XL
+
+Correct reply:
+Ey, pull noir taille XL.
+
+Wrong reply:
+Ahla! XL chnowa t7eb?
+
+GREETING RULE:
+
+Use a greeting such as "Ahla bik" mainly at the beginning of a new conversation.
+
+If the conversation already started, do not restart the conversation with "Ahla bik".
+
+Continue naturally from the previous message.
+
+PRODUCT INFORMATION:
+
+Never invent product information.
+
+Never invent prices.
+
+Never invent stock.
+
+Never invent sizes.
+
+Never invent colors.
+
+Never invent discounts.
+
+Never invent products.
+
+Never invent delivery offers.
+
+Never invent free delivery.
+
+If you do not know something, say that you need to check the information.
+
+Do not pretend that a product is available if you do not have confirmed stock information.
+
+CUSTOMER INTENT:
+
+Understand what the customer wants before replying.
+
+If the customer is asking about a product, stay focused on that product.
+
+If the customer gives a size, understand that the size belongs to the product discussed previously.
+
+If the customer gives a color, understand that the color belongs to the product discussed previously.
+
+If the customer asks for price, answer about the product being discussed.
+
+If the customer asks about delivery, answer about delivery.
+
+Do not change the subject without a reason.
+
+DO NOT SAY YOU ARE AI:
+
+Do not say you are an AI or robot unless the customer specifically asks.
+
+INSTAGRAM STYLE:
+
+Keep replies short and natural.
+
+Do not write long paragraphs.
+
+Do not use formal Arabic.
+
+Do not use Arabic alphabet.
+
+Your goal is to understand the customer, continue the conversation naturally, and help them complete their purchase.
+
 `
-          },
+            },
 
-          {
-            role: 'user',
+            // Conversation history
+            ...conversation
 
-            content: userText
+          ]
+
+        },
+
+        {
+
+          headers: {
+
+            Authorization:
+              `Bearer ${GROQ_API_KEY}`,
+
+            'Content-Type':
+              'application/json'
           }
-
-        ]
-      },
-
-      {
-
-        headers: {
-
-          Authorization:
-            `Bearer ${GROQ_API_KEY}`,
-
-          'Content-Type':
-            'application/json'
         }
-      }
-    );
+      );
+
 
     const reply =
-      response.data?.choices?.[0]?.message?.content;
+      response.data
+        ?.choices?.[0]
+        ?.message?.content;
+
 
     if (!reply) {
 
       console.error(
-        '❌ GROQ returned no reply:',
+        'GROQ returned no reply:',
         response.data
       );
 
-      return 'Ahlan bik! Kifeh najem n3awnek?';
+      return '9olli chnowa t7eb exactement.';
     }
 
-    return reply;
+
+    return reply.trim();
+
 
   } catch (error) {
 
     console.error(
-      '❌ GROQ ERROR:',
+      'GROQ ERROR:',
       error.response?.data ||
       error.message
     );
 
-    return 'Ahlan bik! Jareb ba3ed chwaya.';
+    return 'Jareb ba3ed chwaya.';
   }
 }
 
@@ -334,16 +590,20 @@ El hadaf mte3ek: تفهم chnowa y7eb el client w t3awnou.
 // SEND INSTAGRAM MESSAGE
 // ===============================
 
-async function sendMessage(senderId, text) {
+async function sendMessage(
+  senderId,
+  text
+) {
 
   if (!PAGE_ACCESS_TOKEN) {
 
     console.error(
-      '❌ PAGE_TOKEN is missing'
+      'PAGE_TOKEN is missing'
     );
 
     return;
   }
+
 
   try {
 
@@ -354,23 +614,27 @@ async function sendMessage(senderId, text) {
       {
 
         recipient: {
+
           id: senderId
         },
 
         message: {
+
           text: text
         }
       }
     );
 
+
     console.log(
-      '✅ Reply SENT'
+      'Reply SENT'
     );
+
 
   } catch (error) {
 
     console.error(
-      '❌ SEND ERROR:',
+      'SEND ERROR:',
       error.response?.data ||
       error.message
     );
@@ -385,9 +649,13 @@ async function sendMessage(senderId, text) {
 const PORT =
   process.env.PORT || 10000;
 
-app.listen(PORT, () => {
 
-  console.log(
-    `🚀 ALAA STORE Bot running on port ${PORT}`
-  );
-});
+app.listen(
+  PORT,
+  () => {
+
+    console.log(
+      `ALAA STORE Bot running on port ${PORT}`
+    );
+  }
+);
