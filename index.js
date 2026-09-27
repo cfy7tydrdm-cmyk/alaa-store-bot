@@ -55,14 +55,28 @@ if(body.object === 'instagram' && entry.messaging){
     }
   }
 }
-        // Instagram format
-        if(body.object === 'instagram' && entry.messaging){
-          for(const event of entry.messaging){
-            const senderId = event.sender.id;
-            const text = event.message?.text;
-            if(text) await handleMessage(senderId, text);
-          }
-        }
+// Instagram format
+if(body.object === 'instagram' && entry.messaging){
+  for(const event of entry.messaging){
+
+    if(event.message?.is_echo) continue;
+
+    const senderId = event.sender.id;
+    const text = event.message?.text;
+
+    if(text) await handleMessage(senderId, text);
+  }
+}
+
+// Page format
+if(body.object === 'page'){
+  for(const event of entry.messaging){
+    const senderId = event.sender.id;
+    const text = event.message?.text;
+
+    if(text) await handleMessage(senderId, text);
+  }
+}
         // Page format
         if(body.object === 'page'){
           for(const event of entry.messaging){
