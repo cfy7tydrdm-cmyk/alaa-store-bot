@@ -40,21 +40,6 @@ app.post('/webhook', async (req,res)=>{
       for(const entry of body.entry){
         const messaging = entry.messaging || entry.changes || [];
 
-if(body.object === 'instagram' && entry.messaging){
-  for(const event of entry.messaging){
-
-    if(event.message?.is_echo) continue;
-
-    const senderId = event.sender.id;
-    const text = event.message?.text;
-    if(text) await handleMessage(senderId, text);
-
-      if(senderId && text){
-        await handleMessage(senderId, text);
-      }
-    }
-  }
-}
 // Instagram format
 if(body.object === 'instagram' && entry.messaging){
   for(const event of entry.messaging){
@@ -67,7 +52,6 @@ if(body.object === 'instagram' && entry.messaging){
     if(text) await handleMessage(senderId, text);
   }
 }
-
 // Page format
 if(body.object === 'page'){
   for(const event of entry.messaging){
