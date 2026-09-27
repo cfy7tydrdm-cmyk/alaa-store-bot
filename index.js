@@ -21,8 +21,6 @@ const PAGE_ACCESS_TOKEN =
 const GROQ_API_KEY =
   process.env.GROQ_API_KEY;
 
-
-// Instagram Business Account ID
 const INSTAGRAM_ACCOUNT_ID =
   '17841448590483479';
 
@@ -85,12 +83,11 @@ app.post('/webhook', async (req, res) => {
       return res.status(200).send('EVENT_RECEIVED');
     }
 
-
-    // =================================
-    // INSTAGRAM
-    // =================================
-
     for (const entry of body.entry || []) {
+
+      // ===============================
+      // INSTAGRAM
+      // ===============================
 
       if (
         body.object === 'instagram' &&
@@ -99,7 +96,6 @@ app.post('/webhook', async (req, res) => {
 
         for (const event of entry.messaging) {
 
-          // Ignore messages sent by our own bot
           if (event.message?.is_echo) {
 
             console.log('⏭️ Ignoring bot echo');
@@ -124,9 +120,9 @@ app.post('/webhook', async (req, res) => {
       }
 
 
-      // =================================
+      // ===============================
       // FACEBOOK PAGE
-      // =================================
+      // ===============================
 
       if (
         body.object === 'page' &&
@@ -152,11 +148,9 @@ app.post('/webhook', async (req, res) => {
       }
     }
 
-
     res
       .status(200)
       .send('EVENT_RECEIVED');
-
 
   } catch (error) {
 
@@ -221,7 +215,6 @@ async function getAIReply(userText) {
     return 'Ahlan bik fi ALAA STORE! Chnowa t7eb? 😊';
   }
 
-
   try {
 
     const response = await axios.post(
@@ -237,14 +230,47 @@ async function getAIReply(userText) {
           {
             role: 'system',
 
-            content:
-              'Enti vendeur fi ALAA STORE, ' +
-              'marque streetwear fi Tunisia. ' +
-              'Jaweb b tounsi, 9sir, friendly ' +
-              'w naturel. ' +
-              'A3ti réponses simples w utiles. ' +
-              'Ma تستعملش كلام رسمي برشا. ' +
-              'جاوب كيف vendeur تونسي يحكي مع client fi Instagram.'
+            content: `
+Enti vendeur virtuel mta3 ALAA STORE fi Tunisia.
+
+ALAA STORE ta3mel streetwear w vêtements homme.
+
+Tkalem m3a clients fi Instagram b tounsi naturel, simple, friendly w 9sir.
+
+IMPORTANT:
+
+1. Ma ta3tich معلومات على produit ken ma 3andekch المعطيات متاعو.
+
+2. Ma تختلقش prix.
+
+3. Ma تختلقش stock.
+
+4. Ma تختلقش tailles.
+
+5. Ma تختلقش couleurs.
+
+6. Ma ta3tich discounts ken ma t9oullekch ALAA STORE fama discount.
+
+7. Ma تختلقش livraison مجانية.
+
+8. Ma تختلقش أي produit wala offre.
+
+9. Ken client يسأل على produit ومعلوماتو موش موجودة عندك، قولّو بطريقة طبيعية إنك باش تتثبت، وما تعطيش معلومة من راسك.
+
+10. Ken client يسأل سؤال عام وما يحتاجش معلومات stock/prix، جاوبو عادي.
+
+11. Ken client يقول "شنوة فما؟" أو "شنوة عندكم؟"، قولّو اللي عنا vêtements streetwear homme واطلب منو شنوّة يحب بالضبط.
+
+12. ما تقولش إنك AI أو robot إلا إذا client يسأل مباشرة.
+
+13. ما تستعملش العربية الفصحى برشا. استعمل تونسي.
+
+14. ما تطولش في الإجابة. Instagram DM = réponse قصيرة وطبيعية.
+
+15. ما تعطيش وعود للclient ما نجمناش نضمنوها.
+
+هدفك تعاون client وتفهم شنو يحب، وبعدها وقت تتوفر معلومات المنتجات من قاعدة البيانات تستعملها بدقة.
+`
           },
 
           {
@@ -257,6 +283,7 @@ async function getAIReply(userText) {
       },
 
       {
+
         headers: {
 
           Authorization:
@@ -268,10 +295,8 @@ async function getAIReply(userText) {
       }
     );
 
-
     const reply =
       response.data?.choices?.[0]?.message?.content;
-
 
     if (!reply) {
 
@@ -283,9 +308,7 @@ async function getAIReply(userText) {
       return 'Ahlan bik! Kifeh najem n3awnek?';
     }
 
-
     return reply;
-
 
   } catch (error) {
 
@@ -295,7 +318,7 @@ async function getAIReply(userText) {
       error.message
     );
 
-    return 'Ahlan bik! Famech mochkel technique, jareb ba3ed chwaya.';
+    return 'Ahlan bik! Jareb ba3ed chwaya.';
   }
 }
 
@@ -315,7 +338,6 @@ async function sendMessage(senderId, text) {
     return;
   }
 
-
   try {
 
     await axios.post(
@@ -328,40 +350,4 @@ async function sendMessage(senderId, text) {
           id: senderId
         },
 
-        message: {
-          text: text
-        }
-      }
-    );
-
-
-    console.log(
-      '✅ Reply SENT'
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      '❌ SEND ERROR:',
-      error.response?.data ||
-      error.message
-    );
-  }
-}
-
-
-// ===============================
-// START SERVER
-// ===============================
-
-const PORT =
-  process.env.PORT || 10000;
-
-
-app.listen(PORT, () => {
-
-  console.log(
-    `🚀 ALAA STORE Bot running on port ${PORT}`
-  );
-});
+       
